@@ -29,7 +29,9 @@ Project: https://github.com/aymericdamien/TensorFlow-Examples/
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from tf_dataset_from_dicoms import get_iterator, dicom_generator
+import dicom
+import timeit
+from tf_dataset_from_dicoms import get_iterator, dicom_generator_local
 
 
 
@@ -43,7 +45,7 @@ image_side_size = 512
 num_input = image_side_size*image_side_size  # 512*512 is the dimensions of a CT Scan image in the Kaggle Data Science Bowl data set.
 
 # This is the number of CT Scans that the dataset will return in each batch
-batch_size = 50
+batch_size = 500
 
 
 
@@ -58,20 +60,32 @@ batch_size = 50
 
 
 # Training Parameters
-learning_rate = 0.01
-num_steps = 30000
+learning_rate = 0.01  # originally 0.01
+num_steps = 100    # This is the number of epochs, originally 30,000
+model_path = "./checkpoints/model.ckpt"  # This is where the model checkpoint will be saved
 
-
-display_step = 10
+display_step = 1 #originally 10
 examples_to_show = 10
 
 # Network Parameters
-num_hidden_1 = 256 # 1st layer num features
-num_hidden_2 = 128 # 2nd layer num features (the latent dim)
+num_hidden_1 = 512 # 1st layer num features, originally 256
+num_hidden_2 = 256 # 2nd layer num features (the latent dim), originally 125
 
 
-# tf Graph input (only pictures)
-X = tf.placeholder("float", [None, num_input])
+
+# This line actually gets the batch from the dataset iterator
+MyData = get_iterator(dicom_generator_local, batch_size=batch_size, epochs = 10)
+X = MyData.get_next()
+
+
+
+
+
+
+
+
+#X = tf.placeholder("float", [None, num_input])
+
 
 weights = {
     'encoder_h1': tf.Variable(tf.random_normal([num_input, num_hidden_1])),
@@ -123,33 +137,59 @@ optimizer = tf.train.RMSPropOptimizer(learning_rate).minimize(loss)
 # Initialize the variables (i.e. assign their default value)
 init = tf.global_variables_initializer()
 
+
+# set up a saver to save my model
+saver = tf.train.Saver()
+
+
+
 # Start Training
 # Start a new TF session
 with tf.Session() as sess:
 
     # Run the initializer
-    sess.run(init)
+    #sess.run(init)
 
-    # Training
-    for i in range(1, num_steps+1):
-        # Prepare Data
-
-        #print('Currently Running step {}'.format(i))
-
-
-        # This line actually gets the batch from the dataset iterator
-        my_iterator = get_iterator(dicom_generator, batch_size=batch_size)
-        batch_x = my_iterator.get_next().eval()
-        batch_x = np.reshape(batch_x, (batch_size, num_input))
+    # Restore the parameters from the prior run
+    saver.restore( sess, model_path)
 
 
 
 
-        # Run optimization op (backprop) and cost op (to get loss value)
-        _, l = sess.run([optimizer, loss], feed_dict={X: batch_x})
+#    try:
+#        # Restore model weights from previously saved model
+#        saver.restore(sess, model_path)
+#        print("Model restored from file: %s" % model_path)
+#    except:
+#        pass
+
+
+
+    start_time = timeit.default_timer()
+
+    # This deterimes how many epochs to use.
+    for i in range(num_steps):
+        sess.run(MyData.initializer)
+        Mycounter = 0
+        while True:
+            #print("Run Number: ", Mycounter)
+            Mycounter+=1
+            try:
+
+                _, l = sess.run([optimizer, loss])
+            except tf.errors.OutOfRangeError:
+                break
+        print('Run Time: {}'.format(timeit.default_timer() - start_time))
+
+
         # Display logs per step
         if i % display_step == 0 or i == 1:
-            print('Step %i: Minibatch Loss: %f' % (i, l))
+            print('Epoch %i: Minibatch Loss: %f' % (i+1, l))
+
+     # Save a checkpoint every 50 epochs
+     if i % 50 ==0:
+        save_path = saver.save(sess, model_path)
+        print("Model saved in file: %s" % model_path)
 
 
 
@@ -160,56 +200,28 @@ with tf.Session() as sess:
 
 
 
-
-
-
-    # Testing
+# Testing
     # Encode and decode images from test set and visualize their reconstruction.
-    n = 4
-    canvas_orig = np.empty((image_side_size * n, image_side_size * n))
-    canvas_recon = np.empty((image_side_size * n, image_side_size * n))
-    for i in range(n):
-        # MNIST test set
-        #batch_x, _ = mnist.test.next_batch(n)
-
-        # This line actually gets the batch from the dataset iterator
-        # THIS SHOULD ACTUALLY BE POINTING TO A TEST DATA SET
-        my_iterator = get_iterator(dicom_generator, batch_size=batch_size)
-        batch_x = my_iterator.get_next().eval()
-        batch_x = np.reshape(batch_x, (batch_size, num_input))
 
 
-        # Encode and decode the digit image
-        g = sess.run(decoder_op, feed_dict={X: batch_x})
+    test_image = 'C:\\Users\\Administrator\\Desktop\\ct_scans\\00cba091fa4ad62cc3200a657aeb957e\\b792dbfc27d50dc33e1e0f4b47401a47.dcm'
+    pixels = dicom.read_file(test_image).pixel_array
 
-        # Display original images
-        for j in range(n):
-            # Draw the original digits
-            canvas_orig[i * image_side_size:(i + 1) * image_side_size, j * image_side_size:(j + 1) * image_side_size] = \
-                batch_x[j].reshape([image_side_size, image_side_size])
-        # Display reconstructed images
-        for j in range(n):
-            # Draw the reconstructed digits
-            canvas_recon[i * image_side_size:(i + 1) * image_side_size, j * image_side_size:(j + 1) * image_side_size] = \
-                g[j].reshape([image_side_size, image_side_size])
+    canvas_orig = pixels
+    canvas_recon = sess.run(decoder_op, feed_dict={X: np.resize(pixels, (1, 512*512))})
+    canvas_recon = np.resize(canvas_recon[0],(512,512))
 
-    print("Original Images")
-    plt.figure(figsize=(n, n))
+
+
+    #print("Original Images")
+    plt.figure(figsize=(2, 2))
     plt.imshow(canvas_orig, origin="upper", cmap="gray")
     plt.show()
 
-    print("Reconstructed Images")
-    plt.figure(figsize=(n, n))
+    #print("Reconstructed Images")
+    plt.figure(figsize=(2, 2))
     plt.imshow(canvas_recon, origin="upper", cmap="gray")
     plt.show()
-
-
-
-
-
-
-
-
 
 
 
