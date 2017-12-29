@@ -105,3 +105,5 @@ ENV/
 .idea/vcs.xml
 .idea/workspace.xml
 temp.dcm
+data
+
