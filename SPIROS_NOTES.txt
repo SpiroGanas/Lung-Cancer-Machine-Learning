@@ -1,0 +1,5 @@
+I converted 1,000 DICOM images into text files that contain matrices of the pixels.
+
+Step 1: I need to figure out how to create a dataset to feed the data into a neural network.
+
+Step 2:  I need to create an autoencoder neural network that can be run using the data.
