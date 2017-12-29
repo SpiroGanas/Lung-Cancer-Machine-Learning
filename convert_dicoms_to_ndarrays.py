@@ -26,7 +26,7 @@ def download_and_convert_dicoms(bucket = 'lung-cancer-ct-scans',folder = 'Sample
 
         print("Current Image:", MyCounter)
         MyCounter+=1
-        if MyCounter>10: exit()
+        if MyCounter>1000: exit()
 
 
 
