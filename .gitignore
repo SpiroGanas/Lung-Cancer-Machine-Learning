@@ -106,4 +106,5 @@ ENV/
 .idea/workspace.xml
 temp.dcm
 data
-
+checkpoints
+temp.dcm.aa1aC607
