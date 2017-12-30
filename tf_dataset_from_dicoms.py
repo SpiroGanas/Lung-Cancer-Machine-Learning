@@ -56,9 +56,11 @@ def dicom_generator_local():
 
             pixels = dicom.read_file(filepath).pixel_array
             #print(np.reshape(pixels, (512 * 512)))
+            #print(np.shape(pixels))
 
 
-            yield np.reshape(pixels, (512 * 512))
+            #yield np.reshape(pixels, (512 * 512))  #This is a flattened version of the tensor used by autoencoder.py
+            yield np.reshape(pixels, [512, 512,1])
 
 
 
@@ -77,7 +79,7 @@ def dicom_generator_local():
 
 def get_iterator(dicom_generator, batch_size=100, epochs = 100):
     """This takes in an generator and a batch size, and returns a TensorFlow one_shot_iterator object """
-    ds = tf.data.Dataset.from_generator(dicom_generator, tf.float32)
+    ds = tf.data.Dataset.from_generator(dicom_generator, tf.float32, output_shapes=[512, 512,1])
     #ds = ds.repeat(epochs)  # Create 100 "epochs"
     #ds = ds.shuffle(buffer_size=10000)
     ds = ds.batch(batch_size) # Then number of images in a single batch
@@ -89,7 +91,7 @@ def get_iterator(dicom_generator, batch_size=100, epochs = 100):
 
 
 if __name__ =='__main__':
-    print(dicom_generator_local())
+    print(dicom_generator_local().__next__())
 
 
 
