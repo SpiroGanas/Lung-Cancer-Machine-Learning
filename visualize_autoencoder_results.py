@@ -1,3 +1,8 @@
+# Spiro Ganas
+# 12/29/17
+#
+# This loads the model from the checkpoint file and then runs an CT scan through it
+
 # Derived from this code:
 # https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/autoencoder.py
 #
@@ -156,46 +161,30 @@ with tf.Session() as sess:
 
 
 
-#    try:
-#        # Restore model weights from previously saved model
-#        saver.restore(sess, model_path)
-#        print("Model restored from file: %s" % model_path)
-#    except:
-#        pass
+
+
+# Testing
+    # Encode and decode images from test set and visualize their reconstruction.
+
+
+    test_image = 'C:\\Users\\Administrator\\Desktop\\ct_scans\\00cba091fa4ad62cc3200a657aeb957e\\b792dbfc27d50dc33e1e0f4b47401a47.dcm'
+    pixels = dicom.read_file(test_image).pixel_array
+
+    canvas_orig = pixels
+    canvas_recon = sess.run(decoder_op, feed_dict={X: np.resize(pixels, (1, 512*512))})
+    canvas_recon = np.resize(canvas_recon[0],(512,512))
 
 
 
-    start_time = timeit.default_timer()
+    #print("Original Images")
+    plt.figure(figsize=(8, 8))
+    plt.imshow(canvas_orig, origin="upper", cmap="gray")
+    plt.show()
 
-    # This deterimes how many epochs to use.
-    for i in range(num_steps):
-        sess.run(MyData.initializer)
-        Mycounter = 0
-        while True:
-            #print("Run Number: ", Mycounter)
-            Mycounter+=1
-            try:
-
-                _, l = sess.run([optimizer, loss])
-            except tf.errors.OutOfRangeError:
-                break
-        print('Run Time: {}'.format(timeit.default_timer() - start_time))
-
-
-        # Display logs per step
-        if i % display_step == 0 or i == 1:
-            print('Epoch %i: Minibatch Loss: %f' % (i+1, l))
-
-     # Save a checkpoint every 50 epochs
-    if i % 25 ==0:
-        save_path = saver.save(sess, model_path)
-        print("Model saved in file: %s" % model_path)
-
-
-
-
-
-
+    #print("Reconstructed Images")
+    plt.figure(figsize=(8, 8))
+    plt.imshow(canvas_recon, origin="upper", cmap="gray")
+    plt.show()
 
 
 
