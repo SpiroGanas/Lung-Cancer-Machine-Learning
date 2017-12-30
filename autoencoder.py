@@ -186,10 +186,10 @@ with tf.Session() as sess:
         if i % display_step == 0 or i == 1:
             print('Epoch %i: Minibatch Loss: %f' % (i+1, l))
 
-     # Save a checkpoint every 50 epochs
-    if i % 25 ==0:
-        save_path = saver.save(sess, model_path)
-        print("Model saved in file: %s" % model_path)
+         # Save a checkpoint every 50 epochs
+        if i % 5 ==0:
+            save_path = saver.save(sess, model_path)
+            print("Model saved in file: %s" % model_path)
 
 
 
