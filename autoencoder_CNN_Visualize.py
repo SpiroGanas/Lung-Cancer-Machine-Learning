@@ -1,3 +1,22 @@
+
+
+
+
+#This is not yet
+#not working
+#I need to figure out how to restore the encoder and decoder ops from the saved model.
+
+
+
+
+
+
+
+# Spiro Ganas
+# 12/29/17
+#
+# This loads the model from the checkpoint file and then runs an CT scan through it
+
 # Derived from this code:
 # https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/autoencoder.py
 #
@@ -5,33 +24,13 @@
 # stored on AWS S3.
 
 
-
-
-
-""" Auto Encoder Example.
-
-Build a 2 layers auto-encoder with TensorFlow to compress images to a
-lower latent space and then reconstruct them.
-
-References:
-    Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner. "Gradient-based
-    learning applied to document recognition." Proceedings of the IEEE,
-    86(11):2278-2324, November 1998.
-
-Links:
-    [MNIST Dataset] http://yann.lecun.com/exdb/mnist/
-
-Author: Aymeric Damien
-Project: https://github.com/aymericdamien/TensorFlow-Examples/
-"""
-
-
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import dicom
-import timeit
 from tf_dataset_from_dicoms import get_iterator, dicom_generator_local
+#from autoencoder_CNN import encoder, decoder
+
 
 
 
@@ -60,9 +59,9 @@ batch_size = 250
 
 
 # Training Parameters
-learning_rate = 0.1  # originally 0.01
-num_steps = 4    # This is the number of epochs, originally 30,000
-model_path = "./checkpoints/model.ckpt"  # This is where the model checkpoint will be saved
+learning_rate = 0.01  # originally 0.01
+num_steps = 10    # This is the number of epochs, originally 30,000
+model_path = "./checkpoints/"  # This is where the model checkpoint will be saved
 
 display_step = 1 #originally 10
 examples_to_show = 10
@@ -157,12 +156,24 @@ cost = tf.reduce_mean(loss)
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
 # Initialize the variables (i.e. assign their default value)
-init = tf.global_variables_initializer()
+#init = tf.global_variables_initializer()
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # set up a saver to save my model
 saver = tf.train.Saver()
-
 
 
 
@@ -171,54 +182,38 @@ saver = tf.train.Saver()
 with tf.Session() as sess:
 
     # Run the initializer
-    sess.run(init)
+    #sess.run(init)
 
     # Restore the parameters from the prior run
-    #saver.restore(sess, tf.train.latest_checkpoint(model_path))
+    saver.restore(sess, tf.train.latest_checkpoint(model_path))
 
 
 
 
 
 
-
-    start_time = timeit.default_timer()
-
-    # This deterimes how many epochs to use.
-    for i in range(num_steps):
-        sess.run(MyData.initializer)
-        Mycounter = 0
-        while True:
-
-            #print("The shape of X is: ", tf.shape(X))
-
-            print("Epoch Number: {} , Run Number: {}".format(i, Mycounter))
-
-            Mycounter+=1
-            try:
-
-                _, l = sess.run([optimizer, cost])
-            except tf.errors.OutOfRangeError:
-                break
-        print('Run Time: {}'.format(timeit.default_timer() - start_time))
+# Testing
+    # Encode and decode images from test set and visualize their reconstruction.
 
 
-        # Display logs per step
-        if i % display_step == 0 or i == 1:
-            print('Epoch %i: Minibatch Loss: %f' % (i+1, l))
+    test_image = 'C:\\Users\\Administrator\\Desktop\\ct_scans\\00cba091fa4ad62cc3200a657aeb957e\\b792dbfc27d50dc33e1e0f4b47401a47.dcm'
+    pixels = dicom.read_file(test_image).pixel_array
 
-         # Save a checkpoint every 50 epochs
-        if i % 2 ==0:
-            save_path = saver.save(sess, model_path, global_step=i)
-            print("Model saved in file: %s" % model_path)
+    canvas_orig = pixels
+    canvas_recon = sess.run(y_pred, feed_dict={X: np.resize(pixels, (1, 512, 512, 1))})
+    canvas_recon = np.resize(canvas_recon[0],(512,512))
 
 
 
+    #print("Original Images")
+    plt.figure(figsize=(8, 8))
+    plt.imshow(canvas_orig, origin="upper", cmap="gray")
+    plt.show()
 
-
-
-
-
+    #print("Reconstructed Images")
+    plt.figure(figsize=(8, 8))
+    plt.imshow(canvas_recon, origin="upper", cmap="gray")
+    plt.show()
 
 
 

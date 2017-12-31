@@ -148,10 +148,10 @@ saver = tf.train.Saver()
 with tf.Session() as sess:
 
     # Run the initializer
-    #sess.run(init)
+    sess.run(init)
 
     # Restore the parameters from the prior run
-    saver.restore( sess, model_path)
+    #saver.restore( sess, model_path)
 
 
 
