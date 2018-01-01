@@ -1,22 +1,3 @@
-
-
-
-
-#This is not yet
-#not working
-#I need to figure out how to restore the encoder and decoder ops from the saved model.
-
-
-
-
-
-
-
-# Spiro Ganas
-# 12/29/17
-#
-# This loads the model from the checkpoint file and then runs an CT scan through it
-
 # Derived from this code:
 # https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/autoencoder.py
 #
@@ -24,13 +5,33 @@
 # stored on AWS S3.
 
 
+
+
+
+""" Auto Encoder Example.
+
+Build a 2 layers auto-encoder with TensorFlow to compress images to a
+lower latent space and then reconstruct them.
+
+References:
+    Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner. "Gradient-based
+    learning applied to document recognition." Proceedings of the IEEE,
+    86(11):2278-2324, November 1998.
+
+Links:
+    [MNIST Dataset] http://yann.lecun.com/exdb/mnist/
+
+Author: Aymeric Damien
+Project: https://github.com/aymericdamien/TensorFlow-Examples/
+"""
+
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import dicom
+import timeit
 from tf_dataset_from_dicoms import get_iterator, dicom_generator_local
-#from autoencoder_CNN import encoder, decoder
-
 
 
 
@@ -59,8 +60,8 @@ batch_size = 250
 
 
 # Training Parameters
-learning_rate = 0.01  # originally 0.01
-num_steps = 10    # This is the number of epochs, originally 30,000
+learning_rate = 0.1  # originally 0.01
+num_steps = 10000    # This is the number of epochs, originally 30,000
 model_path = "C:\\git_repos\\Lung-Cancer-Machine-Learning\\checkpoints\\"  # This is where the model checkpoint will be saved
 
 display_step = 1 #originally 10
@@ -73,13 +74,19 @@ num_hidden_2 = 256 # 2nd layer num features (the latent dim), originally 125
 
 
 # This line actually gets the batch from the dataset iterator
-MyData = get_iterator(dicom_generator_local, batch_size=batch_size, epochs = 2)
-X = MyData.get_next()
+#MyData = get_iterator(dicom_generator_local, batch_size=batch_size, epochs = 2)
+#X = MyData.get_next()
+
+
+X = tf.placeholder("float", [1,512,512,1])
+
+training_image = 'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
+pixels = dicom.read_file(training_image).pixel_array
+pixels = np.reshape(pixels,(1,512,512,1))
 
 
 
 
-#X = tf.placeholder("float", [None, num_input])
 
 
 weights = {
@@ -155,10 +162,8 @@ loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y_true, logits=y_pred)
 cost = tf.reduce_mean(loss)
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
-
-
-
-
+# This allows me to use the tensorboard
+tf.summary.scalar('sigmoid_cross_entropy_with_logits', loss)
 
 
 
@@ -169,46 +174,52 @@ saver = tf.train.Saver(max_to_keep=3)
 
 
 
+
 # Start Training
 # Start a new TF session
 with tf.Session() as sess:
 
     # Initialize the variables (i.e. assign their default value)
-    sess.run(tf.global_variables_initializer())
+    #sess.run(tf.global_variables_initializer())
 
     # Restore the parameters from the prior run
-    #saver.restore(sess, tf.train.latest_checkpoint(model_path))
+    saver.restore(sess, tf.train.latest_checkpoint(model_path))
 
 
 
 
 
 
-# Testing
-    # Encode and decode images from test set and visualize their reconstruction.
+
+#    start_time = timeit.default_timer()
+
+    # This deterimes how many epochs to use.
+    for i in range(num_steps):
+
+        Mycounter = 0
 
 
-    test_image =  'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
-    pixels = dicom.read_file(test_image).pixel_array
+        _, l = sess.run([optimizer, cost], feed_dict={X: pixels})
+
+#        print('Run Time: {}'.format(timeit.default_timer() - start_time))
+
+
+        # Display logs per step
+        if i % display_step == 0 or i == 1:
+            print('Epoch %i: Minibatch Loss: %f' % (i+1, l))
+
+         # Save a checkpoint every 50 epochs
+        if i % 100 ==0:
+            save_path = saver.save(sess, model_path, global_step=i)
+            print("Model saved in file: %s" % save_path)
 
 
 
 
-    canvas_orig = pixels
-    canvas_recon = sess.run(y_pred, feed_dict={X: np.resize(pixels, (1, 512, 512, 1))})
-    canvas_recon = np.resize(canvas_recon[0],(512,512))
 
 
 
-    #print("Original Images")
-    plt.figure(figsize=(8, 8))
-    plt.imshow(canvas_orig, origin="upper", cmap="gray")
-    plt.show()
 
-    #print("Reconstructed Images")
-    plt.figure(figsize=(8, 8))
-    plt.imshow(canvas_recon, origin="upper", cmap="gray")
-    plt.show()
 
 
 
