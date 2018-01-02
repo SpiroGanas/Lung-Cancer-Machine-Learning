@@ -4,11 +4,10 @@
 # Download dicom files from AWS S3 and save them as jpgs
 
 
-import boto3
 import dicom
 import numpy as np
-from list_images_on_S3 import list_files_on_s3, split_s3_key
-from view_ct_scan_on_S3 import download_ct_image_from_s3
+from AWS_S3_Programs.list_images_on_S3 import list_files_on_s3, split_s3_key
+from AWS_S3_Programs.view_ct_scan_on_S3 import download_ct_image_from_s3
 
 
 def download_and_convert_dicoms(bucket = 'lung-cancer-ct-scans',folder = 'SampleImages', local_folder = './data' ):
