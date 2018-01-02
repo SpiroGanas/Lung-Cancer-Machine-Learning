@@ -104,7 +104,12 @@ ENV/
 .idea/modules.xml
 .idea/vcs.xml
 .idea/workspace.xml
-temp.dcm
+.idea/other.xml
+
+# folders I added to the project
+tensorboard_logs
 data
 checkpoints
-temp.dcm.aa1aC607
+
+# Ignore any dicom files
+*.dcm
