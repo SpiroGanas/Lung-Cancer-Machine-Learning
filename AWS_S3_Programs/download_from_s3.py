@@ -45,6 +45,3 @@ if __name__ == '__main__':
     BUCKET = 'lung-cancer-ct-scans'
     FOLDER = 'SampleImages'
     s3_keys = download_folder_from_s3(bucket=BUCKET, folder=FOLDER, local_folder='..\\data\\S3_Downloads\\')
-    print("Number of files: {}".format(len(s3_keys)))
-    print(s3_keys)
-    print(split_s3_key(s3_keys[0]))
