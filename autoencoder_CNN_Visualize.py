@@ -26,6 +26,7 @@
 
 import tensorflow as tf
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import dicom
 from tf_dataset_from_dicoms import get_iterator, dicom_generator_local
@@ -60,7 +61,7 @@ batch_size = 250
 
 # Training Parameters
 learning_rate = 0.01  # originally 0.01
-num_steps = 10    # This is the number of epochs, originally 30,000
+num_steps = 1_000_000    # This is the number of epochs, originally 30,000
 model_path = "C:\\git_repos\\Lung-Cancer-Machine-Learning\\checkpoints\\"  # This is where the model checkpoint will be saved
 
 display_step = 1 #originally 10
@@ -174,10 +175,10 @@ saver = tf.train.Saver(max_to_keep=3)
 with tf.Session() as sess:
 
     # Initialize the variables (i.e. assign their default value)
-    sess.run(tf.global_variables_initializer())
+    #sess.run(tf.global_variables_initializer())
 
     # Restore the parameters from the prior run
-    #saver.restore(sess, tf.train.latest_checkpoint(model_path))
+    saver.restore(sess, tf.train.latest_checkpoint(model_path))
 
 
 
@@ -188,27 +189,37 @@ with tf.Session() as sess:
     # Encode and decode images from test set and visualize their reconstruction.
 
 
-    test_image =  'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
-    pixels = dicom.read_file(test_image).pixel_array
+#    test_image =  'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
+#    pixels = dicom.read_file(test_image).pixel_array
+
+
+################################ Simple image code
+    import matplotlib.image as mpimg
+
+
+    def rgb2gray(rgb):
+        return np.dot(rgb[..., :3], [0.299, 0.587, 0.114])
+
+
+    img = mpimg.imread('C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\Simple.jpg')
+    pixels = rgb2gray(img)
+    ################################ Simple image code^^^^^^^^^^^^^^^^6
 
 
 
 
     canvas_orig = pixels
-    canvas_recon = sess.run(y_pred, feed_dict={X: np.resize(pixels, (1, 512, 512, 1))})
+    canvas_recon = sess.run(decoder_op, feed_dict={X: np.resize(pixels, (1, 512, 512, 1))})
     canvas_recon = np.resize(canvas_recon[0],(512,512))
 
 
 
-    #print("Original Images")
-    plt.figure(figsize=(8, 8))
-    plt.imshow(canvas_orig, origin="upper", cmap="gray")
+
+
+    f, axarr = plt.subplots(nrows=1, ncols=2)
+    f.set_figheight(12)
+    f.set_figwidth(12)
+    #axarr[0].label = "Original Images"
+    axarr[0].imshow(canvas_orig, cmap="gray")
+    axarr[1].imshow(canvas_recon, cmap="gray")
     plt.show()
-
-    #print("Reconstructed Images")
-    plt.figure(figsize=(8, 8))
-    plt.imshow(canvas_recon, origin="upper", cmap="gray")
-    plt.show()
-
-
-

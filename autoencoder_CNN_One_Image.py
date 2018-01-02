@@ -61,7 +61,7 @@ batch_size = 250
 
 # Training Parameters
 learning_rate = 0.1  # originally 0.01
-num_steps = 10000    # This is the number of epochs, originally 30,000
+num_steps = 1_000_000     # This is the number of epochs, originally 30,000
 model_path = "C:\\git_repos\\Lung-Cancer-Machine-Learning\\checkpoints\\"  # This is where the model checkpoint will be saved
 
 display_step = 1 #originally 10
@@ -80,8 +80,20 @@ num_hidden_2 = 256 # 2nd layer num features (the latent dim), originally 125
 
 X = tf.placeholder("float", [1,512,512,1])
 
-training_image = 'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
-pixels = dicom.read_file(training_image).pixel_array
+#training_image = 'C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\917ffef820759d2162792dfbcd7a8c35.dcm'
+#pixels = dicom.read_file(training_image).pixel_array
+
+
+
+import matplotlib.image as mpimg
+
+def rgb2gray(rgb):
+    return np.dot(rgb[...,:3], [0.299, 0.587, 0.114])
+
+img = mpimg.imread('C:\\git_repos\\Lung-Cancer-Machine-Learning\\data\\Simple.jpg')
+pixels = rgb2gray(img)
+
+
 pixels = np.reshape(pixels,(1,512,512,1))
 
 
@@ -163,8 +175,10 @@ cost = tf.reduce_mean(loss)
 optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
 
 # This allows me to use the tensorboard
-tf.summary.scalar('sigmoid_cross_entropy_with_logits', loss)
+tf.summary.scalar('sigmoid_cross_entropy_with_logits', cost)
 
+# Merge all the summaries and write them out to /tmp/mnist_logs (by default)
+merged = tf.summary.merge_all()
 
 
 
@@ -179,15 +193,21 @@ saver = tf.train.Saver(max_to_keep=3)
 # Start a new TF session
 with tf.Session() as sess:
 
-    # Initialize the variables (i.e. assign their default value)
-    #sess.run(tf.global_variables_initializer())
+
+
 
     # Restore the parameters from the prior run
-    saver.restore(sess, tf.train.latest_checkpoint(model_path))
+    try:
+        saver.restore(sess, tf.train.latest_checkpoint(model_path))
+        print("Restored the previous run successfully!")
+    except ValueError:
+        # Initialize the variables (i.e. assign their default value)
+        print("Could not restore a prior run.")
+        sess.run(tf.global_variables_initializer())
 
 
 
-
+    train_writer = tf.summary.FileWriter('C:\\git_repos\\Lung-Cancer-Machine-Learning\\\\tensorboard_logs', sess.graph)
 
 
 
@@ -199,7 +219,7 @@ with tf.Session() as sess:
         Mycounter = 0
 
 
-        _, l = sess.run([optimizer, cost], feed_dict={X: pixels})
+        _, l, summary = sess.run([optimizer, cost, merged], feed_dict={X: pixels})
 
 #        print('Run Time: {}'.format(timeit.default_timer() - start_time))
 
