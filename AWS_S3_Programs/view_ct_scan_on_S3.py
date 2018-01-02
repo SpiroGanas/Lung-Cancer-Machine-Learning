@@ -5,6 +5,7 @@
 import boto3
 import dicom
 import matplotlib.pyplot as plt
+from AWS_S3_Programs.download_from_s3 import download_ct_image_from_s3
 
 
 # This loads the image from the local hard drive
@@ -30,12 +31,7 @@ def view_local_ct_image(filename: str ='./temp.dcm'):
     plt.show()
 
 
-def download_ct_image_from_s3(s3_key: str, bucket: str = 'lung-cancer-ct-scans'):
-    """Download a file and temporarily save it to disk."""
-    s3 = boto3.resource('s3')
-    # I'm temporarily storing the dcm file to disk.
-    # This is because pydicom expects a file, not a python object
-    s3.meta.client.download_file(bucket, s3_key, './temp.dcm')
+
 
 
 def view_s3_ct_scan(s3_key: str, bucket: str = 'lung-cancer-ct-scans'):
